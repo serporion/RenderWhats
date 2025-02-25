@@ -1,0 +1,20 @@
+{
+  "name": "whatsapposcar",
+  "version": "1.0.0",
+  "description": "Aplicacion chat en tiempo real",
+  "main": "servidor/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon ./servidor/server.js"
+  },
+  "author": "Oscar Delgado",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "socket.io": "^4.8.1"
+  }
+}

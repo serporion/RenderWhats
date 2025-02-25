@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Panel de usuarios -->
+        <div class="users-panel">
+            <div class="current-user">
+                <img id="userAvatar" src="" alt="Tu avatar">
+                <span id="userName"></span>
+                <div class="dropdown">
+                    <button class="dropdown-btn">⋮</button>
+                    <div class="dropdown-content">
+                        <a href="#" id="profileBtn">Perfil</a>
+                        <a href="#" id="closeChatBtn">Cerrar Chat</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="users-list" id="usersList">
+                <!-- Los usuarios se añadirán dinámicamente -->
+            </div>
+        </div>
+
+        <div class="rooms-panel">
+            <h3>Salas de Chat</h3>
+            <button id="createRoomBtn">Crear Sala</button>
+            <div id="roomsList">
+                <!-- Lista de salas disponibles -->
+                <div class="room-item active" id="sala-general">General</div>
+            </div>
+        </div>
+
+        <!-- Panel de chat -->
+        <div class="chat-panel">
+            <div class="chat-header">
+                <h3>Chat General</h3>
+            </div>
+            <div class="messages" id="messagesContainer">
+                <!-- Los mensajes se añadirán dinámicamente -->
+            </div>
+            <div id="typing-indicator"></div>
+            <div class="message-input">
+                <form id="messageForm">
+                    <input type="text" id="messageInput" placeholder="Escribe un mensaje...">
+                    <button type="submit">
+                        <span>Enviar</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="js/chat.js"></script>
+</body>
+</html>

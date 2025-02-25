@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WhatsOscar</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <img id="logo" src="../img/logo1a.png" alt="WhatsOscar" class="logo">
+        </div>
+        <div class="right-panel-login">
+            <div class="login-container">
+                <h2>Bienvenido a WhatsOscar</h2>
+                <form id="loginForm" action="/login" method="POST">
+                    <div class="input-group">
+                        <input type="text" id="nombre" name="nombre" placeholder="Tu nombre" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="estado" name="estado" placeholder="Tu estado" required>
+                    </div>
+                    <div class="avatar-selection">
+                        <p>Selecciona tu avatar: (por defecto)</p>
+                        <div class="avatar-options">
+                            <!-- Opción de subir imagen personalizada -->
+                            <div class="custom-avatar">
+                                <div class="custom-avatar-label-img">
+                                    <img id="avatarPreview" src="./img/mio.jpg" alt="Tu avatar">
+                                    <label for="avatarUpload">                                
+                                        <span>Subir imagen</span>
+                                    </label>
+                                </div>
+                                <input type="file" id="avatarUpload" accept="image/*">
+                                
+                            </div>
+                            
+                            <!-- Avatares predeterminados -->
+                            <div class="default-avatars">
+                                <input type="radio" id="avatar1" name="avatar" value="./img/avatar1.jpg">
+                                <label for="avatar1"><img src="img/avatar1.jpg" alt="Avatar 1"></label>
+                                
+                                <input type="radio" id="avatar2" name="avatar" value="./img/avatar2.jpg">
+                                <label for="avatar2"><img src="img/avatar2.jpg" alt="Avatar 2"></label>
+                                
+                                <input type="radio" id="avatar3" name="avatar" value="./img/avatar3.jpg">
+                                <label for="avatar3"><img src="img/avatar3.jpg" alt="Avatar 3"></label>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit">Entrar al Chat</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script al final del body -->
+    <script src="js/login.js"></script>
+</body>
+</html>
