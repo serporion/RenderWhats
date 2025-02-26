@@ -28,6 +28,7 @@ socket.emit('nuevo usuario', userData);
 let socket;
 let userData;
 
+/*
 window.onload = async () => {
     // Obtener datos del usuario desde la sesión del servidor
     try {
@@ -45,6 +46,42 @@ window.onload = async () => {
         window.location.href = '/';
     }
 };
+*/
+
+window.onload = async () => {
+    try {
+        const response = await fetch('/user-data');
+        if (!response.ok) {
+            window.location.href = '/';
+            return;
+        }
+        userData = await response.json();
+
+        // Verificar si este usuario ya está en la lista de conectados
+        const checkResponse = await fetch('/check-user-connected', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ nombre: userData.nombre })
+        });
+
+        if (!checkResponse.ok) {
+            // Si el usuario ya está conectado, redirigir al login
+            window.location.href = '/';
+            return;
+        }
+
+        // Inicializar el chat con los datos del usuario con su socket
+        initializeChat(userData);
+    } catch (error) {
+        console.error('Error:', error);
+        window.location.href = '/';
+    }
+};
+
+
+
 
 function initializeChat(userData) {
     socket = io();
@@ -72,7 +109,7 @@ function initializeChat(userData) {
         window.location.href = '/';
     });
 
-    // Manejar click en perfil
+    // Manejar click en perfil. Aun no terminado
     document.getElementById('profileBtn').addEventListener('click', ()=> {
         alert('Función de perfil en desarrollo');
     });
@@ -90,25 +127,30 @@ function initializeChat(userData) {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     });
 
-    // Actualizar lista de usuarios
-    socket.on('lista usuarios', function(usuarios) {
+
+
+    socket.on('usuarios_actualizados', function(usuarios) {
         usersList.innerHTML = '';
         usuarios.forEach(user => {
-            const userDiv = document.createElement('div');
-            userDiv.className = 'user-item';
-            userDiv.innerHTML = `
-                <img src="img/${user.avatar}" alt="${user.nombre}">
+            // No mostrar al usuario actual en la lista
+            if (user.nombre !== userData.nombre) {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'user-item';
+                userDiv.innerHTML = `
+                <img src="../img/${user.avatar}" alt="${user.nombre}">
                 <div>
                     <strong>${user.nombre}</strong>
-                    <p>${user.estado}</p>
+                    <p>${user.estado || ''}</p>
                 </div>
             `;
-            usersList.appendChild(userDiv);
+                userDiv.onclick = () => createPrivateChat(user.nombre);
+                usersList.appendChild(userDiv);
+            }
         });
     });
 
-    
-    // Enviar mensaje sin salas
+
+    // Enviar mensaje sin gestión de salas
     /*
     messageForm.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -135,8 +177,10 @@ function initializeChat(userData) {
 
     // Indicador de "escribiendo"
     let typingTimeout;
-    //messageInput.addEventListener('input', function() {
+
+    //messageInput.addEventListener('input', function() { Parte de "sin salas"
     //    socket.emit('escribiendo');
+
     messageInput.addEventListener('input', function() { //Escribiendo dependiendo de la sala.
         socket.emit('escribiendo', currentRoom);
     
@@ -146,6 +190,7 @@ function initializeChat(userData) {
         }, 1000);
     });
 
+
     // Mostrar quién está escribiendo
     socket.on('usuario escribiendo', function(nombre) {
         typingIndicator.textContent = `${nombre} está escribiendo...`;
@@ -153,6 +198,7 @@ function initializeChat(userData) {
             typingIndicator.textContent = '';
         }, 1000);
     });
+
 
     // Mensajes del sistema
     socket.on('mensaje sistema', function(mensaje) {
@@ -256,7 +302,6 @@ function initializeChat(userData) {
         showPrivateMessage(from, from, message);
     });
 
-    
 
 
     // Variables para las salas
@@ -311,6 +356,5 @@ function initializeChat(userData) {
         document.querySelector('.chat-header h3').textContent = `Chat - ${roomName}`;
     }
 
-   
 
 }

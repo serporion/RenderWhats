@@ -5,7 +5,7 @@
   "main": "servidor/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node ./servidor/server.js"
+    "dev": "nodemon ./servidor/server.js"
   },
   "author": "Oscar Delgado",
   "license": "ISC",

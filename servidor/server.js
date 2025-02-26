@@ -56,12 +56,11 @@ app.get('/', (req, res) => {
 
 app.post('/login', (req, res) => {
     // Guardamos los datos del usuario en sesión
-    const usuario = {
+    req.session.usuario = {
         nombre: req.body.nombre,
         estado: req.body.estado,
         avatar: req.body.avatar
     };
-    req.session.usuario = usuario;
     //res.redirect('/chat');
     res.json({ success: true });
 });
@@ -76,7 +75,19 @@ app.get('/chat', (req, res) => {
     res.sendFile('chat.html', { root: './public' });
 });
 
-// Añadir esta ruta después de las otras rutas
+//ruta necesaria para evitar el F5 Northrop
+app.post('/check-user-connected', (req, res) => {
+    const { nombre } = req.body;
+    if (usuariosConectados.some(u => u.nombre === nombre)) {
+        // Usuario ya conectado
+        req.session.destroy();
+        res.status(401).json({ error: 'Usuario ya conectado' });
+    } else {
+        res.json({ success: true });
+    }
+});
+
+
 app.get('/user-data', (req, res) => {
     if (req.session.usuario) {
         res.json(req.session.usuario);
@@ -85,24 +96,20 @@ app.get('/user-data', (req, res) => {
     }
 });
 
+
+
+
 // Configuración de Socket.io
 io.on('connection', (socket) => {
 
-    // Se desconecta al cerrar la ventana
-    /*
-    window.addEventListener('beforeunload', function() {
-        socket.disconnect();
-    });
-    */
-
     // Gestión de salas
+
     socket.on('crear sala', (roomName) => {
         socket.join(roomName);
         socket.room = roomName;
         io.emit('sala creada', roomName);
     });
 
-    
     socket.on('unirse sala', ({oldRoom, newRoom}) => {
         socket.leave(oldRoom);
         socket.join(newRoom);
@@ -122,73 +129,32 @@ io.on('connection', (socket) => {
     });
     
 
-    /*
-    socket.on('enviar mensaje', (data) => {
-        if (typeof data === 'string') {
-            io.emit('nuevo mensaje', {
-                usuario: socket.usuario,
-                mensaje: data
-            });
-        } else if (data.sala) {
-            // Mensaje con sala específica
-            io.to(data.sala).emit('nuevo mensaje', {
-                usuario: socket.usuario,
-                mensaje: data.mensaje
-            });
-        }
-    });
-    */
-
-   
     socket.on('nuevo usuario', (usuario) => {
-        socket.usuario = usuario;
-        socketUsuarios[usuario.nombre] = socket;
-        usuariosConectados.push(usuario);
+        // Verificar si este usuario ya está conectado
+        if (!usuariosConectados.some(u => u.nombre === usuario.nombre)) {
+            usuariosConectados.push(usuario); // Agregar usuario solo si no está conectado
+        }
 
-        socket.join('General');
-        socket.room = 'General';
-        
-        // Enviar lista filtrada a TODOS los usuarios
-        io.sockets.sockets.forEach(clientSocket => {
-            const clientUser = clientSocket.usuario;
-            if (clientUser) {
-                clientSocket.emit('lista usuarios', 
-                    usuariosConectados.filter(u => u.nombre !== clientUser.nombre)
-                );
-            }
-        });
-        
-        // Notificar conexión a todos menos al usuario actual
+        // Vinculamos el usuario al socket directamente
+        socket.usuario = usuario; // Se asigna para mantener compatibilidad con otras funciones
+
+        // También mapeamos el socket.id con el usuario para consistencia
+        socketUsuarios[socket.id] = usuario;
+
+        // Unirse a la sala por defecto ('General') o a otra sala, e introducir lógica para asignar salas
+        socket.room = usuario.sala || 'General'; // Si no se especifica sala en `usuario`, por defecto es 'General'
+        socket.join(socket.room);
+
+        console.log(`Usuario conectado: ${usuario.nombre} en sala: ${socket.room}`);
+        console.log(`Usuarios conectados:`, usuariosConectados);
+
+        // Emitir la lista actualizada de usuarios a todos
+        io.emit('usuarios_actualizados', usuariosConectados);
+
+        // Notificar conexión a los demás usuarios
         socket.broadcast.emit('mensaje sistema', `${usuario.nombre} se ha conectado`);
     });
-    
-    
-    /*
 
-    // Cuando se recibe un mensaje
-    socket.on('enviar mensaje', (mensaje) => {
-        io.emit('nuevo mensaje', {
-            usuario: socket.usuario,
-            mensaje: mensaje
-        });
-    });
-*/
-    /*
-
-    // Cuando un usuario está escribiendo pero para un manejar donde solo hay una sala.
-    socket.on('escribiendo', () => {
-        socket.broadcast.emit('usuario escribiendo', socket.usuario.nombre);
-    });
-    */
-
-
-
-    /*
-    // Manejar el evento 'escribiendo' para manejar en salas diferentes.
-    socket.on('escribiendo', (sala) => {
-        socket.to(sala).emit('usuario escribiendo', socket.usuario.nombre);
-    });
-    */
 
     socket.on('escribiendo', (sala) => {
         if (socket.usuario && sala) {
@@ -200,30 +166,34 @@ io.on('connection', (socket) => {
     
 
 
-
-
-
-
-    // Cuando un usuario se desconecta
-    /*
     socket.on('disconnect', () => {
-        if (socket.usuario) {
-            usuariosConectados = usuariosConectados.filter(u => u.nombre !== socket.usuario.nombre);
-            io.emit('lista usuarios', usuariosConectados);
-            io.emit('mensaje sistema', `${socket.usuario.nombre} se ha desconectado`);
-        }
-    });
-    */
+        const usuario = socketUsuarios[socket.id];
 
-    socket.on('disconnect', () => {
-        if (socket.usuario) {
-            delete socketUsuarios[socket.usuario.nombre];
-            usuariosConectados = usuariosConectados.filter(u => u.nombre !== socket.usuario.nombre);
-            io.emit('lista usuarios', usuariosConectados);
-            io.emit('mensaje sistema', `${socket.usuario.nombre} se ha desconectado`);
+        if (usuario) {
+            // Eliminar usuario de la lista de conectados
+            usuariosConectados = usuariosConectados.filter(u => u.nombre !== usuario.nombre);
+            delete socketUsuarios[socket.id];
+
+            // Notificar a todos los clientes
+            io.emit('usuarios_actualizados', usuariosConectados);
+            io.emit('mensaje sistema', `${usuario.nombre} se ha desconectado`);
+
+            // Limpiar la sesión asociada a este usuario
+            Object.values(io.sockets.sockets).forEach(clientSocket => {
+                if (clientSocket.request &&
+                    clientSocket.request.session &&
+                    clientSocket.request.session.usuario &&
+                    clientSocket.request.session.usuario.nombre === usuario.nombre) {
+                    clientSocket.request.session.destroy();
+                }
+            });
         }
+
+        console.log(`Usuario desconectado: ${usuario ? usuario.nombre : 'Desconocido'}`);
+        console.log(`Usuarios conectados:`, usuariosConectados);
     });
-    
+
+
 
     socket.on('mensaje privado', function(data) {
         const { to, message } = data;
